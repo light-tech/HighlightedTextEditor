@@ -18,7 +18,8 @@ public struct TextFormattingRule {
     #else
     public typealias SymbolicTraits = UIFontDescriptor.SymbolicTraits
     #endif
-    
+
+    let group: Int
     let key: NSAttributedString.Key?
     let value: Any?
     let fontTraits: SymbolicTraits
@@ -26,16 +27,17 @@ public struct TextFormattingRule {
     // ------------------- convenience ------------------------
     
     public init(key: NSAttributedString.Key, value: Any) {
-        self.init(key: key, value: value, fontTraits: [])
+        self.init(group: 0, key: key, value: value, fontTraits: [])
     }
     
     public init(fontTraits: SymbolicTraits) {
-        self.init(key: nil, value: nil, fontTraits: fontTraits)
+        self.init(group: 0, key: nil, value: nil, fontTraits: fontTraits)
     }
     
     // ------------------ most powerful initializer ------------------
     
-    init(key: NSAttributedString.Key? = nil, value: Any? = nil, fontTraits: SymbolicTraits = []) {
+    public init(group: Int = 0, key: NSAttributedString.Key? = nil, value: Any? = nil, fontTraits: SymbolicTraits = []) {
+        self.group = group
         self.key = key
         self.value = value
         self.fontTraits = fontTraits
@@ -105,7 +107,8 @@ extension HighlightingTextEditor {
                     #else
                     var font = UIFont()
                     #endif
-                    highlightedString.enumerateAttributes(in: match.range, options: []) { attributes, range, stop in
+                    var r = match.range(at: formattingRule.group)
+                    highlightedString.enumerateAttributes(in: r, options: []) { attributes, range, stop in
                         let fontAttribute = attributes.first { $0.key == .font }!
                         #if os(macOS)
                         let previousFont = fontAttribute.value as! NSFont
@@ -114,10 +117,10 @@ extension HighlightingTextEditor {
                         #endif
                         font = previousFont.with(formattingRule.fontTraits)
                     }
-                    highlightedString.addAttribute(.font, value: font, range: match.range)
+                    highlightedString.addAttribute(.font, value: font, range: r)
                     
                     guard let key = formattingRule.key, let value = formattingRule.value else { return }
-                    highlightedString.addAttribute(key, value: value, range: match.range)
+                    highlightedString.addAttribute(key, value: value, range: r)
                 }
             }
         }
